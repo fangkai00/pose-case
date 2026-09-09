@@ -17,8 +17,8 @@ jobs:
           python-version: "3.13"
           cache: pip
 
-      - name: 安装系统依赖（MediaPipe 运行时需 OpenGL/EGL 库）
-        run: sudo apt-get update && sudo apt-get install -y libgl1 libegl1
+      - name: 安装系统依赖（MediaPipe 运行时需 OpenGL/EGL/GLES 系统库）
+        run: sudo apt-get update && sudo apt-get install -y libgl1 libegl1 libgles2
 
       - name: 安装依赖
         run: |
