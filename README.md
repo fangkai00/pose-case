@@ -2,7 +2,8 @@
 
 基于 **MediaPipe 姿态估计 + Qwen-VL 视觉大模型** 的实时动作教练系统：看教程 → 实时练习 → VLM 纠错 → 调整后验证的完整闭环。
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
+[![CI](https://github.com/fangkai00/pose-case/actions/workflows/ci.yml/badge.svg)](https://github.com/fangkai00/pose-case/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-Pose_Landmarker-0097A7)
 ![Qwen-VL](https://img.shields.io/badge/VLM-Qwen--VL--Max-615FFF)
 ![Flask](https://img.shields.io/badge/Flask-3.x-000000?logo=flask)

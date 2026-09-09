@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 生成配置文件（占位 Key，离线测试不调用云端）
+        run: cp config.example.py config.py
+
+      - name: 单元测试 · session_memory 聚合/落盘/跨会话对比
+        run: python _test_session_memory.py
+
+      - name: 冒烟测试 · 视频源 状态机+指标 全链路（断言 15 reps）
+        run: python _test_m2.py
