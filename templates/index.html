@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>视觉运动 Agent 系统 · 深蹲教练</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #10141c; color: #e8eaf0;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 16px;
+  }
+  header { width: 100%; max-width: 1060px; margin-bottom: 14px;
+    display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-size: 20px; font-weight: 600; }
+  header h1 span { color: #4da3ff; }
+  .badge { padding: 4px 12px; border-radius: 12px; font-size: 13px;
+    background: #1c2432; border: 1px solid #2a3752; color: #8ab4f8; }
+  .badge b { color: #6ee7a0; }
+  .layout { display: flex; gap: 16px; width: 100%; max-width: 1060px; align-items: flex-start; }
+  .panel { background: #171c26; border: 1px solid #242e42; border-radius: 12px;
+    overflow: hidden; }
+  .panel-title { padding: 10px 14px; font-size: 14px; font-weight: 600;
+    color: #9aa5b5; border-bottom: 1px solid #242e42;
+    display: flex; justify-content: space-between; }
+  .video-wrap { position: relative; background: #000; }
+  .video-wrap img { display: block; width: 480px; height: 360px; object-fit: cover; }
+  .sidebar { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+  .info-card { padding: 14px; font-size: 14px; line-height: 1.7; color: #c4ccd8; }
+  .pending { color: #5b6575; font-style: italic; }
+
+  /* 指标卡 */
+  .metric-row { display: flex; justify-content: space-between; padding: 6px 2px;
+    border-bottom: 1px dashed #242e42; font-size: 13.5px; }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-val { font-weight: 600; }
+  .ok { color: #6ee7a0; } .bad { color: #ff8a8a; }
+  .rep-item { padding: 8px 10px; border-left: 3px solid #2a3752; margin-bottom: 8px;
+    background: #131822; border-radius: 4px; font-size: 13px; }
+  .rep-item.good { border-left-color: #6ee7a0; }
+  .rep-item.minor { border-left-color: #ffc861; }
+  .rep-item.major { border-left-color: #ff8a8a; }
+  .rep-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .rep-head b { color: #e8eaf0; }
+  .hint-bar { padding: 8px 12px; background: #2b2036; color: #ffd479; font-size: 13px;
+    border-radius: 6px; margin: 8px 14px; display: none; }
+  .state-chip { font-size: 12px; color: #8ab4f8; }
+
+  /* 教程面板 */
+  .tut-gif-wrap { padding: 12px 14px 0; display: flex; gap: 12px; }
+  .tut-gif-wrap img { width: 132px; height: 132px; border-radius: 8px;
+    border: 1px solid #2a3752; background: #000; }
+  .tut-intro { font-size: 12.5px; color: #8b95a8; line-height: 1.6; flex: 1; }
+  .cp-list { padding: 10px 14px 12px; }
+  .cp-item { padding: 6px 8px; margin-bottom: 6px; background: #131822;
+    border-left: 3px solid #4da3ff; border-radius: 4px; font-size: 12.5px; }
+  .cp-item b { color: #8ab4f8; display: block; margin-bottom: 2px; }
+  .cp-item .judge { color: #6d7889; font-size: 11.5px; }
+
+  /* AI 反馈卡 */
+  .ai-card { padding: 12px 14px; }
+  .ai-issue { font-size: 14.5px; font-weight: 600; color: #ffd479; margin-bottom: 6px; }
+  .ai-enc, .ai-sug { font-size: 13px; color: #c4ccd8; margin-bottom: 4px; }
+  .ai-sug b { color: #8ab4f8; }
+  .ai-meta { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+  .sev { padding: 2px 10px; border-radius: 10px; font-size: 11.5px; }
+  .sev.good { background: #12331f; color: #6ee7a0; }
+  .sev.minor { background: #332c12; color: #ffc861; }
+  .sev.major { background: #331212; color: #ff8a8a; }
+  .improved { font-size: 12px; color: #6ee7a0; }
+  .improved.worse { color: #ff8a8a; }
+  .btn-audio { margin-left: auto; background: #23405c; border: 1px solid #2f5c86;
+    color: #8ab4f8; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .btn-audio:hover { background: #2a4d70; }
+  .vlm-tag { font-size: 11px; color: #5b6575; margin-top: 6px; }
+  .play-icon { margin-right: 4px; }
+
+  /* 原始记录 */
+  .raw-toggle { font-size: 11.5px; color: #4da3ff; cursor: pointer; user-select: none;
+    display: inline-block; margin-top: 5px; }
+  .raw-toggle:hover { text-decoration: underline; }
+  .raw-block { display: none; margin-top: 6px; padding: 8px; background: #0d1119;
+    border: 1px solid #242e42; border-radius: 6px; font-size: 11.5px; }
+  .raw-block img { max-width: 100%; border-radius: 4px; margin: 6px 0; }
+  .raw-block pre { white-space: pre-wrap; word-break: break-all; color: #8b95a8;
+    max-height: 140px; overflow: auto; margin: 4px 0; }
+  .raw-block .raw-label { color: #6d7889; font-weight: 600; }
+  /* 浏览器自动播放限制解锁提示 */
+  .sound-hint { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    background: rgba(23,32,44,.95); border: 1px solid var(--accent); color: var(--accent);
+    padding: 8px 18px; border-radius: 20px; font-size: 13px; z-index: 99; cursor: pointer; }
+  /* 开始/停止按钮（顶栏）：点击开始 = 解锁语音 + 会话归零；可随时停止 */
+  .start-btn { background: transparent; border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 16px; padding: 4px 14px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .start-btn:hover { background: var(--accent); color: #10141c; }
+  .start-btn.on { border-color: var(--danger); color: var(--danger); }
+  .start-btn.on:hover { background: var(--danger); color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>视觉运动 <span>Agent</span> 教练系统</h1>
+  <button class="start-btn" id="start-btn" title="开始：解锁语音播报，计数与基线从零开始">▶ 开始练习</button>
+  <span class="badge" id="replay-badge" style="display:none;border-color:#8a5a2a;color:#ffc861;">回放模式</span>
+  <span class="badge">次数 <b id="rep-count">0</b> ｜ <span id="state-chip" class="state-chip">idle</span></span>
+</header>
+<div class="sound-hint" id="sound-hint" style="display:none">🔊 点击页面任意处启用语音播报</div>
+
+<div class="layout">
+  <!-- 左侧信息栏（教程 + 结果） -->
+  <div class="sidebar">
+    <div class="panel">
+      <div class="panel-title">教程 · <span id="tut-name">深蹲</span></div>
+      <div class="tut-gif-wrap">
+        <img id="tut-gif" src="/static/tutorial.gif" alt="教程">
+        <div class="tut-intro" id="tut-intro">加载中…</div>
+      </div>
+      <div class="cp-list" id="cp-list"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">本次动作指标 <span class="state-chip" id="last-rep-label">等待第一次深蹲…</span></div>
+      <div class="info-card" id="metric-card">
+        <div class="metric-row"><span>膝关节角度</span><span class="metric-val pending">—</span></div>
+        <div class="metric-row"><span>下蹲深度</span><span class="metric-val pending">—</span></div>
+        <div class="metric-row"><span>躯干前倾角</span><span class="metric-val pending">—</span></div>
+        <div class="metric-row"><span>左右对称性</span><span class="metric-val pending">—</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">AI 教练反馈 <span class="state-chip" id="vlm-status">等待评审…</span></div>
+      <div class="ai-card" id="ai-card">
+        <div class="ai-issue pending">完成一次深蹲后，AI 教练将给出语音+文字反馈</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">练习历史</div>
+      <div class="info-card" id="history" style="max-height:200px;overflow:auto;">
+        <span class="pending">完成一次深蹲后显示</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右侧摄像头（主画面） -->
+  <div class="panel">
+    <div class="panel-title">实时练习 · 摄像头（骨架 + 膝关节角度）</div>
+    <div class="video-wrap">
+      <img src="/video_feed" alt="video">
+    </div>
+    <div class="hint-bar" id="hint-bar"></div>
+  </div>
+</div>
+
+<script>
+// ============ 轮询：状态 + 横幅 ============
+async function pollStatus() {
+  try {
+    const d = await (await fetch('/api/status')).json();
+    document.getElementById('rep-count').textContent = d.reps;
+    document.getElementById('state-chip').textContent = d.state;
+    // 视频文件源（非摄像头索引）时标明"回放模式"
+    const isReplay = d.source && !/^\d+$/.test(d.source) && d.source !== 'None';
+    document.getElementById('replay-badge').style.display = isReplay ? 'inline-block' : 'none';
+    // 就绪语音提示：点击开始后，全身入镜站直确认 → 播报"准备就绪，请开始第一次深蹲"
+    if (d.ready && voiceEnabled && !cuePlayed) {
+      cuePlayed = true;
+      tryPlay('/static/cue_ready.mp3');
+    }
+  } catch (e) {}
+  setTimeout(pollStatus, 500);
+}
+async function pollHint() {
+  try {
+    const d = await (await fetch('/api/hint')).json();
+    const bar = document.getElementById('hint-bar');
+    if (d.hint) { bar.textContent = '⚡ ' + d.hint; bar.style.display = 'block'; }
+    else bar.style.display = 'none';
+  } catch (e) {}
+  setTimeout(pollHint, 400);
+}
+
+// ============ 教程面板（一次性加载） ============
+async function loadTutorial() {
+  try {
+    const d = await (await fetch('/api/tutorial')).json();
+    if (d.tutorial) {
+      document.getElementById('tut-name').textContent = d.tutorial.exercise;
+      document.getElementById('tut-intro').textContent = d.tutorial.intro;
+      document.getElementById('cp-list').innerHTML = d.tutorial.cps.map(c =>
+        `<div class="cp-item"><b>${c.name}</b>${c.requirement}
+         <div class="judge">判定：${c.how_to_judge}</div></div>`).join('');
+    }
+  } catch (e) {}
+}
+
+// ============ rep 结果：指标卡 + AI 反馈 + 历史 ============
+let lastAudioRep = -1;
+const audioEl = new Audio();
+let pendingAudioSrc = null;
+let voiceEnabled = false;        // 点击"开始"后才自动播报（浏览器自动播放限制 + 避免持续播报误导）
+let cuePlayed = false;           // 就绪提示音本轮是否已播过
+let lastCueRep = 0;              // 已播过确认音的最新 rep 号（新一轮从 1 开始播）
+let feedbackRep = 0;             // 正在播反馈语音的 rep 号（语音结束后接下一次口令）
+let flowToken = 0;               // 会话代次：开始/停止时 +1，作废旧的超时回调
+const cueEl = new Audio('/static/cue_recorded.mp3');  // 独立声道：确认音不抢占反馈语音
+const doneEl = new Audio('/static/cue_done.mp3');     // 三次完成结束语音
+const SQUAT_CUES = {2: '/static/cue_squat2.mp3', 3: '/static/cue_squat3.mp3'};
+const AUTO_VOICE_REPS = 3;       // 引导式流程：共 3 次，每次反馈都自动播报，第 3 次结束后自动停止
+const soundHint = document.getElementById('sound-hint');
+const startBtn = document.getElementById('start-btn');
+// 记录三张卡片的初始 HTML，"开始"时恢复（替代整页刷新，保住音频解锁手势）
+const INIT_METRIC = document.getElementById('metric-card').innerHTML;
+const INIT_AI = document.getElementById('ai-card').innerHTML;
+const INIT_HISTORY = document.getElementById('history').innerHTML;
+
+// ---------- 引导式流程：反馈语音结束后口令下一次 / 三次后自动结束 ----------
+function repCounted(n) { return lastReps.some(r => r.rep === n); }
+
+function advanceAfterFeedback(n, token) {
+  if (token !== flowToken || !voiceEnabled) return;
+  if (n >= AUTO_VOICE_REPS) {           // 第 3 次反馈播完 → 结束语音 + 自动停止
+    endSession();
+    doneEl.currentTime = 0;
+    doneEl.play().catch(()=>{});
+    return;
+  }
+  if (!repCounted(n + 1)) {             // 下一次还没做 → 口令开始
+    const el = new Audio(SQUAT_CUES[n + 1]);
+    el.play().catch(()=>{});
+  }
+  // 若用户已抢先做完下一次，则跳过口令，等该次反馈自然衔接
+}
+
+function endSession() {
+  flowToken++;
+  voiceEnabled = false;
+  pendingAudioSrc = null;
+  feedbackRep = 0;
+  audioEl.pause();
+  cueEl.pause();
+  startBtn.textContent = '▶ 开始练习';
+  startBtn.classList.remove('on');
+  startBtn.title = '开始：解锁语音播报，计数与基线从零开始';
+}
+
+// 反馈语音自然播完 → 衔接下一次口令（手动点"播放语音"结束不触发：feedbackRep=0）
+audioEl.addEventListener('ended', () => {
+  if (feedbackRep > 0) {
+    const n = feedbackRep;
+    feedbackRep = 0;
+    advanceAfterFeedback(n, flowToken);
+  }
+});
+
+startBtn.addEventListener('click', async () => {
+  if (!voiceEnabled) {
+    // 开始：会话归零 + 解锁语音（本次点击即浏览器要求的用户交互）
+    try { await fetch('/api/reset', {method: 'POST'}); } catch (e) {}
+    flowToken++;
+    voiceEnabled = true;
+    lastAudioRep = 0;            // 会话已归零，等待新的第 1 次
+    lastCueRep = 0;              // 确认音从第 1 次重新播
+    feedbackRep = 0;
+    cuePlayed = false;           // 等待重新就绪后播提示音
+    startBtn.textContent = '■ 停止';
+    startBtn.classList.add('on');
+    startBtn.title = '停止自动播报；再次开始将重新归零';
+    soundHint.style.display = 'none';
+    document.getElementById('metric-card').innerHTML = INIT_METRIC;
+    document.getElementById('ai-card').innerHTML = INIT_AI;
+    document.getElementById('history').innerHTML = INIT_HISTORY;
+    document.getElementById('last-rep-label').textContent = '等待第一次深蹲…';
+    document.getElementById('vlm-status').textContent = '等待评审…';
+  } else {
+    // 手动停止：仅关闭自动播报，画面与指标继续；再次点开始会重新归零
+    endSession();
+  }
+});
+
+// 浏览器自动播放限制：带声音的 audio.play() 需用户先与页面交互。
+// 被拦截时挂起待播音频并显示提示条；首次点击页面后补播，后续自动播放即被允许。
+function tryPlay(src) {
+  if (src) pendingAudioSrc = src;
+  if (!pendingAudioSrc) return;
+  audioEl.src = pendingAudioSrc;
+  audioEl.play().then(() => {
+    pendingAudioSrc = null;
+    soundHint.style.display = 'none';
+  }).catch(() => {
+    soundHint.style.display = 'block';
+  });
+}
+document.addEventListener('pointerdown', () => {
+  if (pendingAudioSrc) tryPlay();
+  else soundHint.style.display = 'none';  // 用户已交互，后续自动播放不会被拦截
+});
+
+let lastReps = [];
+async function pollReps() {
+  try {
+    const d = await (await fetch('/api/reps')).json();
+    if (d.count > 0 && d.reps.length) {
+      const last = d.reps[d.reps.length - 1];
+      renderMetricCard(last);
+      lastReps = d.reps;
+      renderHistory(d.reps);
+      // 即时确认音：新 rep 被计数的瞬间播"动作已记录，正在分析"
+      // （不等 VLM——反馈语音约 7s 后由下方逻辑接上；独立声道不互相打断）
+      if (voiceEnabled && last.rep > lastCueRep) {
+        lastCueRep = last.rep;
+        cueEl.currentTime = 0;
+        cueEl.play().catch(()=>{});
+      }
+      // AI 反馈卡 + 自动播报：取最新的"已评审" rep（最新 rep 可能仍在评审中）
+      const lastReviewed = [...d.reps].reverse().find(r => r.vlm);
+      if (lastReviewed) {
+        renderAICard(lastReviewed);
+        const n = lastReviewed.rep;
+        if (voiceEnabled && n <= AUTO_VOICE_REPS && n > lastAudioRep) {
+          lastAudioRep = n;
+          if (lastReviewed.audio) {
+            feedbackRep = n;         // 标记：该反馈语音自然播完后，衔接下一次口令
+            tryPlay(lastReviewed.audio);
+          } else {
+            // VLM 降级无语音：稍候直接口令下一次，保持引导流程推进
+            const token = flowToken;
+            setTimeout(() => advanceAfterFeedback(n, token), 2500);
+          }
+        }
+      } else {
+        renderAICard(last);  // 还没有任何评审结果 → 显示评审中
+      }
+    }
+  } catch (e) {}
+  setTimeout(pollReps, 700);
+}
+
+function renderMetricCard(rep) {
+  document.getElementById('last-rep-label').textContent =
+    `第 ${rep.rep} 次 · ${rep.rule_level === 'good' ? '标准' : '需改进'}`;
+  const rows = document.querySelectorAll('#metric-card .metric-row');
+  rep.judged.forEach((j, i) => {
+    const val = rows[i].querySelector('.metric-val');
+    val.textContent = `${j.value}  ${j.ok ? '✓' : '✗ ' + j.comment}`;
+    val.className = 'metric-val ' + (j.ok ? 'ok' : 'bad');
+  });
+}
+
+function renderAICard(rep) {
+  const el = document.getElementById('ai-card');
+  const st = document.getElementById('vlm-status');
+  const v = rep.vlm;
+  if (!v) {
+    st.textContent = `第 ${rep.rep} 次评审中…`;
+    el.innerHTML = `<div class="ai-issue">⏳ VLM 正在分析动作帧…</div>
+      <div class="ai-enc">规则初判：${rep.rule_summary.join('；')}</div>`;
+    return;
+  }
+  st.textContent = v.degraded ? '规则引擎（VLM 降级）' : 'VLM 评审完成';
+  // 改善判定以本地指标容差对比为准（VLM 的 improved_vs_last 仅作解释参考）
+  const IMP_TEXT = { improved: ['↑ 较上次改善', ''], no_change: ['↕ 无明显变化', 'worse'],
+                     unknown: ['？ 无法判断', 'worse'] };
+  let imp = '', impDetail = '';
+  if (rep.improvement) {
+    const [txt, cls] = IMP_TEXT[rep.improvement.verdict] || IMP_TEXT.unknown;
+    imp = `<span class="improved ${cls}">${txt}</span>`;
+    impDetail = `<div class="vlm-tag">📊 ${rep.improvement.detail}` +
+      `${rep.improvement.vs === 'prev_session' ? '（跨会话：与上次练习末次对比）' : ''}</div>`;
+  }
+  const sevText = {good:'标准', minor:'小问题', major:'需重点改进'}[v.severity] || v.severity;
+  el.innerHTML = `
+    <div class="ai-issue">🎯 ${v.main_issue}</div>
+    <div class="ai-enc">💪 ${v.encouragement}</div>
+    <div class="ai-sug"><b>建议：</b>${v.suggestion}</div>
+    <div class="ai-meta">
+      <span class="sev ${v.severity}">${sevText}</span>
+      ${imp}
+      ${rep.audio ? `<button class="btn-audio" onclick="playAudio('${rep.audio}')">🔊 播放语音</button>` : ''}
+    </div>
+    ${impDetail}
+    ${v.visual_notes ? `<div class="vlm-tag">👁 ${v.visual_notes}</div>` : ''}`;
+}
+
+function playAudio(src) { tryPlay(src); }
+
+function renderHistory(reps) {
+  document.getElementById('history').innerHTML = reps.slice(-8).reverse().map(r => {
+    const v = r.vlm ? `· ${r.vlm.main_issue}` : '';
+    const hasRaw = r.vlm && !r.vlm.degraded;
+    const expanded = rawCache[r.rep];  // 轮询重渲染时保持展开状态
+    return `<div class="rep-item ${r.rule_level}">
+      <div class="rep-head"><b>第 ${r.rep} 次</b><span>${r.rule_level === 'good' ? '✓' : '需改进'}</span></div>
+      ${r.rule_summary.map(s => `<div>· ${s}</div>`).join('')}
+      ${v ? `<div style="color:#ffd479">${v}</div>` : ''}
+      ${hasRaw ? `<span class="raw-toggle" onclick="toggleRaw(${r.rep})">${expanded ? '▾ 收起原始记录' : '▸ 查看原始记录'}</span>
+        <div class="raw-block" style="display:${expanded ? 'block' : 'none'}">${expanded || ''}</div>` : ''}
+    </div>`; }).join('');
+}
+
+// ============ 原始记录（VLM 可追溯存档） ============
+const rawCache = {};  // repId → 已渲染的 HTML（存在即视为展开）
+async function toggleRaw(repId) {
+  if (rawCache[repId]) { delete rawCache[repId]; renderHistory(lastReps); return; }
+  rawCache[repId] = '<span class="pending">加载中…</span>';
+  renderHistory(lastReps);
+  try {
+    const d = await (await fetch(`/api/raw/${repId}`)).json();
+    rawCache[repId] = d.error ? '<span class="pending">无存档</span>' : `
+      ${d.image ? `<div class="raw-label">关键帧拼图（发给 VLM 的原图）</div><img src="${d.image}">` : ''}
+      ${d.prompt ? `<div class="raw-label">Prompt</div><pre>${d.prompt}</pre>` : ''}
+      ${d.review ? `<div class="raw-label">VLM 原始响应</div><pre>${JSON.stringify(d.review, null, 2)}</pre>` : ''}`;
+  } catch (e) {
+    rawCache[repId] = '<span class="pending">加载失败</span>';
+  }
+  renderHistory(lastReps);
+}
+
+loadTutorial(); pollStatus(); pollHint(); pollReps();
+</script>
+</body>
+</html>

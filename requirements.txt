@@ -1,0 +1,20 @@
+# 视觉运动 Agent 系统 · 深蹲教练 — 依赖（Python 3.13 实测通过）
+# 安装：pip install -r requirements.txt
+#
+# 启动：
+#   python app.py                        # 摄像头（--camera 1 可换索引）
+#   python app.py --video test_squat.mp4 # 预录视频回放模式（界面有"回放模式"标识）
+#
+# 注意：除 pip 依赖外，还需姿态模型文件 models/pose_landmarker_lite.task
+# （已随项目提供；如缺失可从 MediaPipe 官方文档页下载 pose_landmarker_lite：
+#  https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/python#model ）
+# 百炼 API Key 在 config.py 顶部常量 DASHSCOPE_API_KEY。
+
+flask==3.1.2
+opencv-python==5.0.0.93
+mediapipe==1.0.1
+openai==3.8.0
+edge-tts==7.2.8
+pydantic==2.12.4
+numpy==2.3.5
+Pillow>=10.0.0

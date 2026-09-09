@@ -1,0 +1,27 @@
+# 敏感配置（含 API Key）——复制 config.example.py 为 config.py 并填入自己的 Key
+config.py
+
+# 运行时缓存
+__pycache__/
+*.pyc
+tutorial_grid.jpg
+
+# 提交材料与录屏（与代码库无关）
+任务提交/
+任务提交.zip
+2026-*.mp4
+完整录屏演示.mp4
+
+# 大视频文件（保留 test_squat.mp4 作为演示样例）
+*.mp4
+!test_squat.mp4
+
+# 内部文档（不入库）
+spec.md
+spec修改建议_快速Demo版.txt
+
+# IDE / 系统文件
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
