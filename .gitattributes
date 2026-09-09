@@ -1,0 +1,10 @@
+# 第三方教程数据集：不参与 GitHub 语言统计（否则其 16MB 展示页会吞掉语言条）
+exercises-dataset-main/** linguist-vendored
+
+# MediaPipe 模型/演示媒体为二进制，明确排除统计干扰
+*.task linguist-vendored
+*.mp4 linguist-vendored
+*.mp3 linguist-vendored
+*.gif linguist-vendored
+*.png linguist-vendored
+*.jpg linguist-vendored
